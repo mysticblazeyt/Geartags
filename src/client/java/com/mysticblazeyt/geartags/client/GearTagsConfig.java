@@ -21,7 +21,7 @@ public class GearTagsConfig implements ConfigData {
 
     @ConfigEntry.Gui.Tooltip
     @Comment("Z Spacing between Different Layers to Prevent Overlapping")
-    public float Z_SPACING = 0.15f;
+    public float Z_SPACING = 0.251f;
 
     @ConfigEntry.Gui.Tooltip
     @Comment("How High (Above the Player) the Overlay should be Drawn")
