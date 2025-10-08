@@ -1,0 +1,53 @@
+{
+  "key.geartags.toggle": "Toggle GearTags",
+
+  "text.autoconfig.geartags.title": "GearTags Config",
+
+  "text.autoconfig.geartags.option.ENABLED": "Enabled",
+  "text.autoconfig.geartags.option.ENABLED.@Tooltip": "Whether GearTags is Enabled",
+
+  "text.autoconfig.geartags.option.TEXT_SHADOW": "Text Shadow",
+  "text.autoconfig.geartags.option.TEXT_SHADOW.@Tooltip": "Whether the Text has Shadow",
+
+  "text.autoconfig.geartags.option.DYNAMIC_DURABILITY_TEXT": "Dynamic Durability Text",
+  "text.autoconfig.geartags.option.DYNAMIC_DURABILITY_TEXT.@Tooltip": "Whether the Durability Text changes Colors according to Durability",
+
+  "text.autoconfig.geartags.option.Z_SPACING": "Z Spacing",
+  "text.autoconfig.geartags.option.Z_SPACING.@Tooltip": "Z Spacing between Different Layers to Prevent Overlapping",
+
+  "text.autoconfig.geartags.option.OVERLAY_OFFSET_Y": "Overlay Y Offset",
+  "text.autoconfig.geartags.option.OVERLAY_OFFSET_Y.@Tooltip": "How High (Above the Player) the Overlay should be Drawn",
+
+  "text.autoconfig.geartags.option.OVERLAY_SCALE": "Overlay Scale",
+  "text.autoconfig.geartags.option.OVERLAY_SCALE.@Tooltip": "The Size of the Overlay",
+
+  "text.autoconfig.geartags.option.OVERLAY_BOX_ALPHA": "Overlay Box Opacity",
+  "text.autoconfig.geartags.option.OVERLAY_BOX_ALPHA.@Tooltip": "The Opacity of the Overlay Background Box",
+
+  "text.autoconfig.geartags.option.OVERLAY_BOX_HEIGHT": "Overlay Box Height",
+  "text.autoconfig.geartags.option.OVERLAY_BOX_HEIGHT.@Tooltip": "The Height of the Overlay Background Box",
+
+  "text.autoconfig.geartags.option.ITEM_SPACING": "Item Spacing",
+  "text.autoconfig.geartags.option.ITEM_SPACING.@Tooltip": "The Space Between Items",
+
+  "text.autoconfig.geartags.option.PADDING": "Padding",
+  "text.autoconfig.geartags.option.PADDING.@Tooltip": "The Length of the Leading & Trailing Spaces",
+
+  "text.autoconfig.geartags.option.ITEM_ICON_SCALE": "Item Icon Size",
+  "text.autoconfig.geartags.option.ITEM_ICON_SCALE.@Tooltip": "The Size of the Item Icon",
+
+  "text.autoconfig.geartags.option.ITEM_ICON_OFFSET_X": "Item Icon X Offset",
+  "text.autoconfig.geartags.option.ITEM_ICON_OFFSET_X.@Tooltip": "Horizontal offset of the item icon",
+
+  "text.autoconfig.geartags.option.ITEM_ICON_OFFSET_Y": "Item Icon Y Offset",
+  "text.autoconfig.geartags.option.ITEM_ICON_OFFSET_Y.@Tooltip": "Vertical offset of the item icon",
+
+  "text.autoconfig.geartags.option.TEXT_SCALE": "Text Scale",
+  "text.autoconfig.geartags.option.TEXT_SCALE.@Tooltip": "The Size of the Overlay Text",
+
+  "text.autoconfig.geartags.option.TEXT_OFFSET_X": "Text X Offset",
+  "text.autoconfig.geartags.option.TEXT_OFFSET_X.@Tooltip": "Horizontal offset of the text",
+
+  "text.autoconfig.geartags.option.TEXT_OFFSET_Y": "Text Y Offset",
+  "text.autoconfig.geartags.option.TEXT_OFFSET_Y.@Tooltip": "Vertical offset of the text"
+}

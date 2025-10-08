@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "geartags",
+  "version": "${version}",
+  "name": "GearTags",
+  "description": "A Mod that Displays Info about Other Players' Gear in an Overlay like Nametags.",
+  "authors": ["MysticBlazeYT"],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/geartags/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.mysticblazeyt.geartags.client.GearTagsClient"
+    ],
+    "main": [
+      "com.mysticblazeyt.geartags.GearTags"
+    ],
+    "modmenu": [
+      "com.mysticblazeyt.geartags.client.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "geartags.mixins.json",
+    {
+      "config": "geartags.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "${minecraft_version}",
+    "fabric-api": ">=0.128.2+1.21.6",
+    "cloth-config2": ">=19.0.147"
+  },
+  "recommends": {
+    "modmenu": ">=15.0.0"
+  }
+}
