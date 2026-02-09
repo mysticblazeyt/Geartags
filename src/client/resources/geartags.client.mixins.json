@@ -1,9 +1,12 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "com.mysticblazeyt.geartags.mixin.client",
+  "package": "com.mysticblazeyt.geartags.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "ItemRenderStateAccessor",
+    "LayerRenderStateAccessor",
+    "WorldRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

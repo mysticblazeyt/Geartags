@@ -1,26 +1,35 @@
 package com.mysticblazeyt.geartags.client;
 
+import com.mysticblazeyt.geartags.client.enums.DurabilityDisplayMode;
+import com.mysticblazeyt.geartags.client.enums.RenderMode;
+import com.mysticblazeyt.geartags.client.enums.TextDisplayMode;
+import com.mysticblazeyt.geartags.client.event.AfterEntitiesEvents;
+import com.mysticblazeyt.geartags.client.mixin.ItemRenderStateAccessor;
+import com.mysticblazeyt.geartags.client.mixin.LayerRenderStateAccessor;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.JanksonConfigSerializer;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.item.ItemModelManager;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.item.ItemRenderState;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.render.model.json.Transformation;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-import net.minecraft.client.render.OverlayTexture;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
@@ -29,25 +38,31 @@ import java.util.List;
 public class GearTagsClient implements ClientModInitializer {
     public static MinecraftClient client = MinecraftClient.getInstance();
     public static GearTagsConfig CONFIG;
+
     @Override
     public void onInitializeClient() {
         AutoConfig.register(GearTagsConfig.class, JanksonConfigSerializer::new);
         CONFIG = AutoConfig.getConfigHolder(GearTagsConfig.class).getConfig();
-        Commands.register();
         Keybinds.register();
-
-        WorldRenderEvents.LAST.register(context -> {
-            float tickDelta = context.tickCounter().getTickProgress(true);
-            renderItemHud(context.matrixStack(), context.camera().getPos(), tickDelta, context.consumers());
-        });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             Keybinds.onTick();
             Util.onTick();
         });
+
+        AfterEntitiesEvents.AFTER_ENTITIES.register((worldRenderer, matrices, renderStates, queue, tickDelta) -> {
+            Vec3d cameraPos = client.gameRenderer.getCamera().getPos();
+            VertexConsumerProvider.Immediate immediate = client.getBufferBuilders().getEntityVertexConsumers();
+            renderItemHud(matrices, cameraPos, tickDelta, immediate, queue);
+            immediate.draw();
+        });
+
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(ClientCommandManager.literal("geartags")
+                .executes(Util.queueOpenConfig())
+        ));
     }
 
-    private void renderItemHud(MatrixStack matrices, Vec3d cameraPos, float tickDelta, VertexConsumerProvider vertexConsumers) {
+    public static void renderItemHud(MatrixStack matrices, Vec3d cameraPos, float tickDelta, VertexConsumerProvider vertexConsumers, OrderedRenderCommandQueue queue) {
         if (!CONFIG.ENABLED) return;
 
         if (client.player == null || client.world == null) return;
@@ -91,7 +106,7 @@ public class GearTagsClient implements ClientModInitializer {
             matrices.scale(CONFIG.OVERLAY_SCALE, CONFIG.OVERLAY_SCALE, CONFIG.OVERLAY_SCALE);
 
             matrices.push();
-            matrices.translate(-(overlayWidth / 2f), 0, 0);
+            matrices.translate(-(overlayWidth / 2f), 0, CONFIG.OVERLAY_BOX_Z_SPACING);
             fillRect(matrices, overlayWidth, CONFIG.OVERLAY_BOX_HEIGHT, vertexConsumers);
             matrices.pop();
 
@@ -102,7 +117,7 @@ public class GearTagsClient implements ClientModInitializer {
 
                 matrices.push();
                 matrices.scale(CONFIG.ITEM_ICON_SCALE, CONFIG.ITEM_ICON_SCALE, CONFIG.ITEM_ICON_SCALE);
-                renderItemWithOverlay(displayItems.get(i), matrices, client.textRenderer, vertexConsumers);
+                renderItemWithOverlay(displayItems.get(i), matrices, client.textRenderer, vertexConsumers, queue);
                 matrices.pop();
 
                 matrices.pop();
@@ -111,103 +126,138 @@ public class GearTagsClient implements ClientModInitializer {
         }
     }
 
-    private void renderItemWithOverlay(ItemStack stack, MatrixStack matrices, TextRenderer textRenderer, VertexConsumerProvider vertexConsumers) {
+    @SuppressWarnings("DataFlowIssue")
+    private static void renderItemWithOverlay(ItemStack stack, MatrixStack matrices, TextRenderer textRenderer, VertexConsumerProvider vertexConsumers, OrderedRenderCommandQueue queue) {
         if (stack == null || stack.isEmpty()) return;
-        World world = client.world;
         int light = 15728880;
-        int overlay = OverlayTexture.DEFAULT_UV;
 
-        // Render Item Icon
-        client.getItemRenderer().renderItem(stack, ItemDisplayContext.FIXED, light, overlay, matrices, vertexConsumers, world, 0);
+        boolean renderIcon = CONFIG.RENDER_MODE == RenderMode.ICON_ONLY || CONFIG.RENDER_MODE == RenderMode.BOTH;
+        boolean renderText = CONFIG.RENDER_MODE == RenderMode.TEXT_ONLY || CONFIG.RENDER_MODE == RenderMode.BOTH;
 
-        if (stack.getCount() > 1) {
-            String count = String.valueOf(stack.getCount());
-            float textX = 17 - textRenderer.getWidth(count) + CONFIG.TEXT_OFFSET_X;
-            float textY = CONFIG.TEXT_OFFSET_Y;
-            int color = 0xFFFFFFFF;
-            boolean shadow = CONFIG.TEXT_SHADOW;
-
+        if (renderIcon) {
             matrices.push();
-            matrices.translate(0f, 0f, -CONFIG.Z_SPACING); // Fix Overlapping Items
-            matrices.scale(CONFIG.TEXT_SCALE, CONFIG.TEXT_SCALE, CONFIG.TEXT_SCALE);
-            matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(180)); // Fix Mirrored Text
+            try {
+                ItemModelManager itemModelManager = client.getItemModelManager();
+                ItemRenderState renderState = new ItemRenderState();
+                itemModelManager.clearAndUpdate(renderState, stack, CONFIG.ITEM_DISPLAY_CONTEXT, client.world, null, 0);
+                ItemRenderStateAccessor renderStateAccessor = (ItemRenderStateAccessor) renderState;
 
-            // Negative because Earlier Code Mirrored the Quad
-            float adjustedX = -textX - textRenderer.getWidth(count);
-            float adjustedY = -textY - textRenderer.fontHeight;
+                if (renderStateAccessor.getLayerCount() <= 0) return;
 
-            OrderedText orderedText = Text.literal(count).asOrderedText();
-            Matrix4f model = matrices.peek().getPositionMatrix();
+                ItemRenderState.LayerRenderState layerState = renderStateAccessor.getLayers()[0];
+                LayerRenderStateAccessor layerAccessor = (LayerRenderStateAccessor) layerState;
+                RenderLayer layer = layerAccessor.getRenderLayer();
 
-            textRenderer.draw(orderedText, adjustedX, adjustedY, color, shadow, model, vertexConsumers, TextRenderer.TextLayerType.NORMAL, 0, light);
-            matrices.pop();
+                if (layer == null) renderState.render(matrices, queue, light, OverlayTexture.DEFAULT_UV, 0);
+                else {
+                    List<BakedQuad> quads = layerState.getQuads();
+
+                    int[] tints = layerAccessor.getTints();
+                    if (tints == null) tints = new int[]{-1};
+
+                    ItemRenderState.Glint glint = layerAccessor.getGlint();
+
+                    Transformation transform = layerAccessor.getTransform();
+                    if (transform == null) return;
+
+                    transform.apply(CONFIG.ITEM_DISPLAY_CONTEXT.isLeftHand(), matrices.peek());
+
+                    ItemRenderer.renderItem(CONFIG.ITEM_DISPLAY_CONTEXT, matrices, vertexConsumers, light, OverlayTexture.DEFAULT_UV, tints, quads, layer, glint);
+                }
+            } finally {
+                matrices.pop();
+            }
         }
-        else if (stack.isDamageable() && stack.isDamaged()) {
-            int max = stack.getMaxDamage();
-            int current = max - stack.getDamage();
-            float percent = (float) current / max;
-            int percentInt = Math.round(percent * 100f);
-            String perc = percentInt + "%";
-            float textX = 17 - textRenderer.getWidth(perc) + CONFIG.TEXT_OFFSET_X;
-            float textY = CONFIG.TEXT_OFFSET_Y;
-            int color = getDurabilityColor(current, max);
-            boolean shadow = CONFIG.TEXT_SHADOW;
 
-            matrices.push();
-            matrices.translate(0f, 0f, -CONFIG.Z_SPACING); // Fix Overlapping Items
-            matrices.scale(CONFIG.TEXT_SCALE, CONFIG.TEXT_SCALE, CONFIG.TEXT_SCALE);
-            matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(180)); // Fix Mirrored Text
+        if (renderText) {
+            boolean renderCount = CONFIG.TEXT_DISPLAY_MODE == TextDisplayMode.COUNT_ONLY || CONFIG.TEXT_DISPLAY_MODE == TextDisplayMode.BOTH;
+            boolean renderDurability = CONFIG.TEXT_DISPLAY_MODE == TextDisplayMode.DURABILITY_ONLY || CONFIG.TEXT_DISPLAY_MODE == TextDisplayMode.BOTH;
+            if (stack.getCount() > 1 && renderCount) {
+                String count = String.valueOf(stack.getCount());
 
-            // Negative because Earlier Code Mirrored the Quad
-            float adjustedX = -textX - textRenderer.getWidth(perc);
-            float adjustedY = -textY - textRenderer.fontHeight;
+                float width = textRenderer.getWidth(count);
+                float height = textRenderer.fontHeight;
+                float textX = -(width / 2) + CONFIG.TEXT_OFFSET_X;
+                float textY = -(height / 2) + CONFIG.TEXT_OFFSET_Y;
+                int color = CONFIG.DEFAULT_TEXT_COLOR;
+                boolean shadow = CONFIG.TEXT_SHADOW;
 
-            OrderedText orderedText = (Text.literal(perc)).asOrderedText();
-            Matrix4f model = matrices.peek().getPositionMatrix();
+                matrices.push();
+                matrices.translate(0f, 0f, -CONFIG.Z_SPACING);
+                matrices.scale(CONFIG.TEXT_SCALE, CONFIG.TEXT_SCALE, CONFIG.TEXT_SCALE);
+                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(180));
 
-            textRenderer.draw(orderedText, adjustedX, adjustedY, color, shadow, model, vertexConsumers, TextRenderer.TextLayerType.NORMAL, 0, light);
-            matrices.pop();
+                OrderedText orderedText = Text.literal(count).asOrderedText();
+                Matrix4f model = matrices.peek().getPositionMatrix();
+
+                textRenderer.draw(orderedText, textX, textY, color, shadow, model, vertexConsumers, TextRenderer.TextLayerType.NORMAL, 0, light);
+                matrices.pop();
+            } else if (stack.isDamageable() && stack.isDamaged() && renderDurability) {
+                int max = stack.getMaxDamage();
+                int current = max - stack.getDamage();
+                String durability = getDurabilityString(current, max);
+
+                float width = textRenderer.getWidth(durability);
+                float height = textRenderer.fontHeight;
+                float textX = -(width / 2) + CONFIG.TEXT_OFFSET_X;
+                float textY = -(height / 2) + CONFIG.TEXT_OFFSET_Y;
+                int color = getDurabilityColor(current, max);
+                boolean shadow = CONFIG.TEXT_SHADOW;
+
+                matrices.push();
+                matrices.translate(0f, 0f, -CONFIG.Z_SPACING);
+                matrices.scale(CONFIG.TEXT_SCALE, CONFIG.TEXT_SCALE, CONFIG.TEXT_SCALE);
+                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(180));
+
+                OrderedText orderedText = Text.literal(durability).asOrderedText();
+                Matrix4f model = matrices.peek().getPositionMatrix();
+
+                textRenderer.draw(orderedText, textX, textY, color, shadow, model, vertexConsumers, TextRenderer.TextLayerType.NORMAL, 0, light);
+                matrices.pop();
+            }
         }
     }
 
-    private int getDurabilityColor(int current, int max) {
+    private static String getDurabilityString(int current, int max) {
+        if (CONFIG.DURABILITY_DISPLAY_MODE == DurabilityDisplayMode.NUMBER) return String.valueOf(current);
+        if (CONFIG.DURABILITY_DISPLAY_MODE == DurabilityDisplayMode.FRACTION) return current + "/" + max;
+        int percent = Math.round(((float) current / max) * 100f);
+        return percent + "%" ;
+    }
+
+    private static int getDurabilityColor(int current, int max) {
         float percent = (float) current / (float) max;
         int alpha = 0xFF << 24;
 
-        if (!CONFIG.DYNAMIC_DURABILITY_TEXT) return 0xFFFFFFFF;
+        if (!CONFIG.DYNAMIC_DURABILITY_TEXT) return CONFIG.DEFAULT_TEXT_COLOR;
 
         if (percent >= 0.95f) return alpha | 0x00FF00;
-        else if (percent >= 0.90f) return alpha | 0x19FF00;
-        else if (percent >= 0.85f) return alpha | 0x33FF00;
-        else if (percent >= 0.80f) return alpha | 0x4DFF00;
-        else if (percent >= 0.75f) return alpha | 0x66FF00;
-        else if (percent >= 0.70f) return alpha | 0x80FF00;
-        else if (percent >= 0.65f) return alpha | 0x99FF00;
-        else if (percent >= 0.60f) return alpha | 0xB2FF00;
-        else if (percent >= 0.55f) return alpha | 0xCCFF00;
-        else if (percent >= 0.50f) return alpha | 0xE5FF00;
-        else if (percent >= 0.45f) return alpha | 0xFFFF00;
-        else if (percent >= 0.40f) return alpha | 0xFFCC00;
-        else if (percent >= 0.35f) return alpha | 0xFFA500;
-        else if (percent >= 0.30f) return alpha | 0xFF8000;
-        else if (percent >= 0.25f) return alpha | 0xFF6600;
-        else if (percent >= 0.20f) return alpha | 0xFF4000;
-        else if (percent >= 0.15f) return alpha | 0xFF1A00;
-        else if (percent >= 0.10f) return alpha | 0xFF0000;
-        else if (percent >= 0.05f) return alpha | 0xCC0000;
-        else return alpha | 0x990000;
+        if (percent >= 0.90f) return alpha | 0x19FF00;
+        if (percent >= 0.85f) return alpha | 0x33FF00;
+        if (percent >= 0.80f) return alpha | 0x4DFF00;
+        if (percent >= 0.75f) return alpha | 0x66FF00;
+        if (percent >= 0.70f) return alpha | 0x80FF00;
+        if (percent >= 0.65f) return alpha | 0x99FF00;
+        if (percent >= 0.60f) return alpha | 0xB2FF00;
+        if (percent >= 0.55f) return alpha | 0xCCFF00;
+        if (percent >= 0.50f) return alpha | 0xE5FF00;
+        if (percent >= 0.45f) return alpha | 0xFFFF00;
+        if (percent >= 0.40f) return alpha | 0xFFCC00;
+        if (percent >= 0.35f) return alpha | 0xFFA500;
+        if (percent >= 0.30f) return alpha | 0xFF8000;
+        if (percent >= 0.25f) return alpha | 0xFF6600;
+        if (percent >= 0.20f) return alpha | 0xFF4000;
+        if (percent >= 0.15f) return alpha | 0xFF1A00;
+        if (percent >= 0.10f) return alpha | 0xFF0000;
+        if (percent >= 0.05f) return alpha | 0xCC0000;
+        return alpha | 0x990000;
     }
 
-    private double lerp(float delta, double start, double end) {
-        return start + (end - start) * delta;
-    }
-
-    private void fillRect(MatrixStack matrices, int width, int height, VertexConsumerProvider vertexConsumers) {
-        int alpha = CONFIG.OVERLAY_BOX_ALPHA;
-        if (alpha <= 0) return; // skip drawing if alpha is 0
+    private static void fillRect(MatrixStack matrices, int width, int height, VertexConsumerProvider vertexConsumers) {
+        if (CONFIG.OVERLAY_BOX_ALPHA <= 0) return;
 
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getDebugFilledBox());
-        float a = MathHelper.clamp(alpha, 0, 100) / 100.0F; // convert percentage to 0.0-1.0
+        float a = CONFIG.OVERLAY_BOX_ALPHA / 100.0F;
         float r = (1291845632 >> 16 & 255) / 255.0F;
         float g = (1291845632 >> 8 & 255) / 255.0F;
         float b = (1291845632 & 255) / 255.0F;
@@ -218,8 +268,11 @@ public class GearTagsClient implements ClientModInitializer {
         vertexConsumer.vertex(matrix, 0, -4 + height, 0).color(r, g, b, a);           // Bottom-left
         vertexConsumer.vertex(matrix, width, -4 + height, 0).color(r, g, b, a);       // Bottom-right
         vertexConsumer.vertex(matrix, width, -4, 0).color(r, g, b, a);                // Top-right
-
         vertexConsumer.vertex(matrix, 0, -4, 0).color(r, g, b, a);                    // Top-left
         vertexConsumer.vertex(matrix, width, -4 + height, 0).color(r, g, b, a);       // Bottom-right
+    }
+
+    private static double lerp(float delta, double start, double end) {
+        return start + (end - start) * delta;
     }
 }
