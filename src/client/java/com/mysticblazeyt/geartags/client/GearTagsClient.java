@@ -3,27 +3,20 @@ package com.mysticblazeyt.geartags.client;
 import com.mysticblazeyt.geartags.client.enums.DurabilityDisplayMode;
 import com.mysticblazeyt.geartags.client.enums.RenderMode;
 import com.mysticblazeyt.geartags.client.enums.TextDisplayMode;
-import com.mysticblazeyt.geartags.client.event.AfterEntitiesEvents;
-import com.mysticblazeyt.geartags.client.mixin.ItemRenderStateAccessor;
-import com.mysticblazeyt.geartags.client.mixin.LayerRenderStateAccessor;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.JanksonConfigSerializer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.item.ItemModelManager;
 import net.minecraft.client.render.*;
-import net.minecraft.client.render.command.OrderedRenderCommandQueue;
-import net.minecraft.client.render.item.ItemRenderState;
-import net.minecraft.client.render.item.ItemRenderer;
-import net.minecraft.client.render.model.BakedQuad;
-import net.minecraft.client.render.model.json.Transformation;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.OrderedText;
@@ -50,11 +43,9 @@ public class GearTagsClient implements ClientModInitializer {
             Util.onTick();
         });
 
-        AfterEntitiesEvents.AFTER_ENTITIES.register((worldRenderer, matrices, renderStates, queue, tickDelta) -> {
-            Vec3d cameraPos = client.gameRenderer.getCamera().getPos();
-            VertexConsumerProvider.Immediate immediate = client.getBufferBuilders().getEntityVertexConsumers();
-            renderItemHud(matrices, cameraPos, tickDelta, immediate, queue);
-            immediate.draw();
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+            float tickDelta = context.tickCounter().getTickProgress(true);
+            renderItemHud(context.matrixStack(), context.camera().getPos(), tickDelta, context.consumers());
         });
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(ClientCommandManager.literal("geartags")
@@ -62,7 +53,7 @@ public class GearTagsClient implements ClientModInitializer {
         ));
     }
 
-    public static void renderItemHud(MatrixStack matrices, Vec3d cameraPos, float tickDelta, VertexConsumerProvider vertexConsumers, OrderedRenderCommandQueue queue) {
+    private void renderItemHud(MatrixStack matrices, Vec3d cameraPos, float tickDelta, VertexConsumerProvider vertexConsumers) {
         if (!CONFIG.ENABLED) return;
 
         if (client.player == null || client.world == null) return;
@@ -117,7 +108,7 @@ public class GearTagsClient implements ClientModInitializer {
 
                 matrices.push();
                 matrices.scale(CONFIG.ITEM_ICON_SCALE, CONFIG.ITEM_ICON_SCALE, CONFIG.ITEM_ICON_SCALE);
-                renderItemWithOverlay(displayItems.get(i), matrices, client.textRenderer, vertexConsumers, queue);
+                renderItemWithOverlay(displayItems.get(i), matrices, client.textRenderer, vertexConsumers);
                 matrices.pop();
 
                 matrices.pop();
@@ -126,48 +117,15 @@ public class GearTagsClient implements ClientModInitializer {
         }
     }
 
-    @SuppressWarnings("DataFlowIssue")
-    private static void renderItemWithOverlay(ItemStack stack, MatrixStack matrices, TextRenderer textRenderer, VertexConsumerProvider vertexConsumers, OrderedRenderCommandQueue queue) {
+    private static void renderItemWithOverlay(ItemStack stack, MatrixStack matrices, TextRenderer textRenderer, VertexConsumerProvider vertexConsumers) {
         if (stack == null || stack.isEmpty()) return;
         int light = 15728880;
+        int overlay = OverlayTexture.DEFAULT_UV;
 
         boolean renderIcon = CONFIG.RENDER_MODE == RenderMode.ICON_ONLY || CONFIG.RENDER_MODE == RenderMode.BOTH;
         boolean renderText = CONFIG.RENDER_MODE == RenderMode.TEXT_ONLY || CONFIG.RENDER_MODE == RenderMode.BOTH;
 
-        if (renderIcon) {
-            matrices.push();
-            try {
-                ItemModelManager itemModelManager = client.getItemModelManager();
-                ItemRenderState renderState = new ItemRenderState();
-                itemModelManager.clearAndUpdate(renderState, stack, CONFIG.ITEM_DISPLAY_CONTEXT, client.world, null, 0);
-                ItemRenderStateAccessor renderStateAccessor = (ItemRenderStateAccessor) renderState;
-
-                if (renderStateAccessor.getLayerCount() <= 0) return;
-
-                ItemRenderState.LayerRenderState layerState = renderStateAccessor.getLayers()[0];
-                LayerRenderStateAccessor layerAccessor = (LayerRenderStateAccessor) layerState;
-                RenderLayer layer = layerAccessor.getRenderLayer();
-
-                if (layer == null) renderState.render(matrices, queue, light, OverlayTexture.DEFAULT_UV, 0);
-                else {
-                    List<BakedQuad> quads = layerState.getQuads();
-
-                    int[] tints = layerAccessor.getTints();
-                    if (tints == null) tints = new int[]{-1};
-
-                    ItemRenderState.Glint glint = layerAccessor.getGlint();
-
-                    Transformation transform = layerAccessor.getTransform();
-                    if (transform == null) return;
-
-                    transform.apply(CONFIG.ITEM_DISPLAY_CONTEXT.isLeftHand(), matrices.peek());
-
-                    ItemRenderer.renderItem(CONFIG.ITEM_DISPLAY_CONTEXT, matrices, vertexConsumers, light, OverlayTexture.DEFAULT_UV, tints, quads, layer, glint);
-                }
-            } finally {
-                matrices.pop();
-            }
-        }
+        if (renderIcon) client.getItemRenderer().renderItem(stack, ItemDisplayContext.FIXED, light, overlay, matrices, vertexConsumers, client.world, 0);
 
         if (renderText) {
             boolean renderCount = CONFIG.TEXT_DISPLAY_MODE == TextDisplayMode.COUNT_ONLY || CONFIG.TEXT_DISPLAY_MODE == TextDisplayMode.BOTH;

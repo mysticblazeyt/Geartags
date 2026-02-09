@@ -13,7 +13,7 @@ public class Keybinds {
     private static KeyBinding toggleKey;
 
     public static void register() {
-        toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.geartags.toggle", GLFW.GLFW_KEY_UNKNOWN, KeyBinding.Category.MISC));
+        toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.geartags.toggle", GLFW.GLFW_KEY_UNKNOWN, "key.categories.misc"));
     }
 
     public static void onTick() {
