@@ -7,7 +7,7 @@ import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
 import me.shedaniel.autoconfig.annotation.ConfigEntry;
 import me.shedaniel.cloth.clothconfig.shadowed.blue.endless.jankson.Comment;
-import net.minecraft.item.ItemDisplayContext;
+import net.minecraft.item.ModelTransformationMode;
 
 @Config(name = "geartags")
 public class GearTagsConfig implements ConfigData {
@@ -45,8 +45,8 @@ public class GearTagsConfig implements ConfigData {
 
     @ConfigEntry.Gui.Tooltip
     @ConfigEntry.Gui.EnumHandler(option = ConfigEntry.Gui.EnumHandler.EnumDisplayOption.BUTTON)
-    @Comment("Which Item Display Context should be used")
-    public ItemDisplayContext ITEM_DISPLAY_CONTEXT = ItemDisplayContext.FIXED;
+    @Comment("Which Model Transformation Mode should be used")
+    public ModelTransformationMode MODEL_TRANSFORMATION_MODE = ModelTransformationMode.FIXED;
 
     @ConfigEntry.Gui.Tooltip
     @Comment("Z Spacing between Different Layers to Prevent Overlapping")

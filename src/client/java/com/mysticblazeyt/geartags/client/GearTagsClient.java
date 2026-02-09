@@ -43,7 +43,7 @@ public class GearTagsClient implements ClientModInitializer {
         });
 
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
-            float tickDelta = context.tickCounter().getTickProgress(true);
+            float tickDelta = context.tickCounter().getTickDelta(true);
             renderItemHud(context.matrixStack(), context.camera().getPos(), tickDelta, context.consumers());
         });
 
@@ -78,9 +78,9 @@ public class GearTagsClient implements ClientModInitializer {
 
             int overlayWidth = itemCount * CONFIG.ITEM_SPACING + CONFIG.PADDING * 2;
 
-            double px = lerp(tickDelta, player.lastX, player.getX());
-            double py = lerp(tickDelta, player.lastY, player.getY());
-            double pz = lerp(tickDelta, player.lastZ, player.getZ());
+            double px = lerp(tickDelta, player.lastRenderX, player.getX());
+            double py = lerp(tickDelta, player.lastRenderY, player.getY());
+            double pz = lerp(tickDelta, player.lastRenderZ, player.getZ());
 
             double x = px - cameraPos.x;
             double y = py - cameraPos.y + player.getStandingEyeHeight() + CONFIG.OVERLAY_OFFSET_Y;
@@ -124,7 +124,7 @@ public class GearTagsClient implements ClientModInitializer {
         boolean renderIcon = CONFIG.RENDER_MODE == RenderMode.ICON_ONLY || CONFIG.RENDER_MODE == RenderMode.BOTH;
         boolean renderText = CONFIG.RENDER_MODE == RenderMode.TEXT_ONLY || CONFIG.RENDER_MODE == RenderMode.BOTH;
 
-        if (renderIcon) client.getItemRenderer().renderItem(stack, CONFIG.ITEM_DISPLAY_CONTEXT, light, overlay, matrices, vertexConsumers, client.world, 0);
+        if (renderIcon) client.getItemRenderer().renderItem(stack, CONFIG.MODEL_TRANSFORMATION_MODE, light, overlay, matrices, vertexConsumers, client.world, 0);
 
         if (renderText) {
             boolean renderCount = CONFIG.TEXT_DISPLAY_MODE == TextDisplayMode.COUNT_ONLY || CONFIG.TEXT_DISPLAY_MODE == TextDisplayMode.BOTH;

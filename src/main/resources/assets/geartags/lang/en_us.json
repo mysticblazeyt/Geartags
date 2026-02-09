@@ -16,7 +16,6 @@
   "GUI": "GUI",
   "FIXED": "Fixed",
   "GROUND": "Ground",
-  "ON_SHELF": "On Shelf",
   "FIRST_PERSON_LEFT_HAND": "First Person Left Hand",
   "FIRST_PERSON_RIGHT_HAND": "First Person Right Hand",
   "THIRD_PERSON_LEFT_HAND": "Third Person Left Hand",
@@ -47,8 +46,8 @@
   "text.autoconfig.geartags.option.DURABILITY_DISPLAY_MODE": "Durability Display Mode",
   "text.autoconfig.geartags.option.DURABILITY_DISPLAY_MODE.@Tooltip": "How should durability be displayed (Number, Fraction or Percentage)",
 
-  "text.autoconfig.geartags.option.ITEM_DISPLAY_CONTEXT": "Item Display Context",
-  "text.autoconfig.geartags.option.ITEM_DISPLAY_CONTEXT.@Tooltip": "Which Item Display Context should be used",
+  "text.autoconfig.geartags.option.MODEL_TRANSFORMATION_MODE": "Model Transformation Mode",
+  "text.autoconfig.geartags.option.MODEL_TRANSFORMATION_MODE.@Tooltip": "Which Model Transformation Mode should be used",
 
   "text.autoconfig.geartags.option.Z_SPACING": "Z-Spacing",
   "text.autoconfig.geartags.option.Z_SPACING.@Tooltip": "Z Spacing between Item Icon and Text to Prevent Overlapping",
