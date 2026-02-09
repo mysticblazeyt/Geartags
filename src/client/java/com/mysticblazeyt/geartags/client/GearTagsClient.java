@@ -125,7 +125,7 @@ public class GearTagsClient implements ClientModInitializer {
         boolean renderIcon = CONFIG.RENDER_MODE == RenderMode.ICON_ONLY || CONFIG.RENDER_MODE == RenderMode.BOTH;
         boolean renderText = CONFIG.RENDER_MODE == RenderMode.TEXT_ONLY || CONFIG.RENDER_MODE == RenderMode.BOTH;
 
-        if (renderIcon) client.getItemRenderer().renderItem(stack, ItemDisplayContext.FIXED, light, overlay, matrices, vertexConsumers, client.world, 0);
+        if (renderIcon) client.getItemRenderer().renderItem(stack, CONFIG.ITEM_DISPLAY_CONTEXT, light, overlay, matrices, vertexConsumers, client.world, 0);
 
         if (renderText) {
             boolean renderCount = CONFIG.TEXT_DISPLAY_MODE == TextDisplayMode.COUNT_ONLY || CONFIG.TEXT_DISPLAY_MODE == TextDisplayMode.BOTH;
