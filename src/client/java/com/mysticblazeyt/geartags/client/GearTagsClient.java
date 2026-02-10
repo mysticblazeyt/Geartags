@@ -43,7 +43,7 @@ public class GearTagsClient implements ClientModInitializer {
         });
 
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
-            float tickDelta = context.tickCounter().getTickDelta(true);
+            float tickDelta = context.tickDelta();
             renderItemHud(context.matrixStack(), context.camera().getPos(), tickDelta, context.consumers());
         });
 
@@ -221,12 +221,12 @@ public class GearTagsClient implements ClientModInitializer {
 
         Matrix4f matrix = matrices.peek().getPositionMatrix();
 
-        vertexConsumer.vertex(matrix, 0, -4, 0).color(r, g, b, a);                    // Top-left
-        vertexConsumer.vertex(matrix, 0, -4 + height, 0).color(r, g, b, a);           // Bottom-left
-        vertexConsumer.vertex(matrix, width, -4 + height, 0).color(r, g, b, a);       // Bottom-right
-        vertexConsumer.vertex(matrix, width, -4, 0).color(r, g, b, a);                // Top-right
-        vertexConsumer.vertex(matrix, 0, -4, 0).color(r, g, b, a);                    // Top-left
-        vertexConsumer.vertex(matrix, width, -4 + height, 0).color(r, g, b, a);       // Bottom-right
+        vertexConsumer.vertex(matrix, 0, -4, 0).color(r, g, b, a).next();                    // Top-left
+        vertexConsumer.vertex(matrix, 0, -4 + height, 0).color(r, g, b, a).next();           // Bottom-left
+        vertexConsumer.vertex(matrix, width, -4 + height, 0).color(r, g, b, a).next();       // Bottom-right
+        vertexConsumer.vertex(matrix, width, -4, 0).color(r, g, b, a).next();                // Top-right
+        vertexConsumer.vertex(matrix, 0, -4, 0).color(r, g, b, a).next();                    // Top-left
+        vertexConsumer.vertex(matrix, width, -4 + height, 0).color(r, g, b, a).next();       // Bottom-right
     }
 
     private static double lerp(float delta, double start, double end) {
