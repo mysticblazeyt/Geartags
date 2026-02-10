@@ -44,8 +44,7 @@
 
 GearTags **requires**:  
 - [Fabric API](https://modrinth.com/mod/fabric-api)  
-- [Cloth Config API](https://modrinth.com/mod/cloth-config)  
-- [Sodium](https://modrinth.com/mod/sodium) and [Iris](https://modrinth.com/mod/iris) **[1.20.1-1.21.3 only]**
+- [Cloth Config API](https://modrinth.com/mod/cloth-config)
 
 GearTags **recommends**:  
 - [Mod Menu](https://modrinth.com/mod/modmenu)  
