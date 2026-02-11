@@ -51,7 +51,7 @@ public class GearTagsClient implements ClientModInitializer {
         });
 
         AfterEntitiesEvents.AFTER_ENTITIES.register((worldRenderer, matrices, renderStates, queue, tickDelta) -> {
-            Vec3d cameraPos = client.gameRenderer.getCamera().getPos();
+            Vec3d cameraPos = client.gameRenderer.getCamera().getCameraPos();
             VertexConsumerProvider.Immediate immediate = client.getBufferBuilders().getEntityVertexConsumers();
             renderItemHud(matrices, cameraPos, tickDelta, immediate, queue);
             immediate.draw();
@@ -256,7 +256,7 @@ public class GearTagsClient implements ClientModInitializer {
     private static void fillRect(MatrixStack matrices, int width, int height, VertexConsumerProvider vertexConsumers) {
         if (CONFIG.OVERLAY_BOX_ALPHA <= 0) return;
 
-        VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getDebugFilledBox());
+        VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayers.debugFilledBox());
         float a = CONFIG.OVERLAY_BOX_ALPHA / 100.0F;
         float r = (1291845632 >> 16 & 255) / 255.0F;
         float g = (1291845632 >> 8 & 255) / 255.0F;
@@ -268,8 +268,6 @@ public class GearTagsClient implements ClientModInitializer {
         vertexConsumer.vertex(matrix, 0, -4 + height, 0).color(r, g, b, a);           // Bottom-left
         vertexConsumer.vertex(matrix, width, -4 + height, 0).color(r, g, b, a);       // Bottom-right
         vertexConsumer.vertex(matrix, width, -4, 0).color(r, g, b, a);                // Top-right
-        vertexConsumer.vertex(matrix, 0, -4, 0).color(r, g, b, a);                    // Top-left
-        vertexConsumer.vertex(matrix, width, -4 + height, 0).color(r, g, b, a);       // Bottom-right
     }
 
     private static double lerp(float delta, double start, double end) {

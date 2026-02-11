@@ -1,7 +1,7 @@
 package com.mysticblazeyt.geartags.client;
 
 import com.mojang.brigadier.Command;
-import me.shedaniel.autoconfig.AutoConfig;
+import me.shedaniel.autoconfig.AutoConfigClient;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.gui.screen.Screen;
 
@@ -25,7 +25,7 @@ public class Util {
     }
 
     public static void openConfigScreen(Screen parent) {
-        Screen screen = AutoConfig.getConfigScreen(GearTagsConfig.class, parent).get();
+        Screen screen = AutoConfigClient.getConfigScreen(GearTagsConfig.class, parent).get();
         client.setScreen(screen);
     }
 }
